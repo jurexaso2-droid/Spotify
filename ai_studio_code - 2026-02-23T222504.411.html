@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Web Player</title>
+    <style>
+        :root {
+            --spotify-green: #1DB954;
+            --spotify-black: #191414;
+            --spotify-dark-gray: #535353;
+            --spotify-light-gray: #B3B3B3;
+        }
+
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: 'Circular', Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #181818;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--spotify-green);
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 20px;
+            border: none;
+            outline: none;
+            background-color: white;
+            color: black;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: var(--spotify-green);
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            color: white;
+            font-size: 18px;
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:hover {
+            transform: scale(1.1);
+        }
+
+        /* Player Section */
+        #player-container {
+            display: none; /* Hidden until search */
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .album-art {
+            width: 250px;
+            height: 250px;
+            border-radius: 10px;
+            object-fit: cover;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .track-info {
+            margin-bottom: 20px;
+        }
+
+        .track-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .track-artist {
+            color: var(--spotify-light-gray);
+            font-size: 0.9rem;
+        }
+
+        audio {
+            width: 100%;
+            height: 40px;
+            border-radius: 20px;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--spotify-green);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Spotify Player</h1>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Enter song name...">
+            <button onclick="searchSong()">🔍</button>
+        </div>
+
+        <div class="loader" id="loader"></div>
+
+        <div id="player-container">
+            <img id="albumArt" src="" alt="Album Art" class="album-art">
+            <div class="track-info">
+                <div class="track-title" id="trackTitle">Song Title</div>
+                <div class="track-artist" id="trackArtist">Artist Name</div>
+            </div>
+            <audio id="audioPlayer" controls controlsList="nodownload">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+    </div>
+
+    <script>
+        async function searchSong() {
+            const query = document.getElementById('searchInput').value;
+            const playerContainer = document.getElementById('player-container');
+            const loader = document.getElementById('loader');
+            
+            if (!query) {
+                alert("Please enter a song name!");
+                return;
+            }
+
+            // UI Reset
+            playerContainer.style.display = 'none';
+            loader.style.display = 'block';
+
+            try {
+                // Using the API from your bot code
+                const apiUrl = `https://betadash-api-swordslush-production.up.railway.app/spt?title=${encodeURIComponent(query)}`;
+                
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (!data || !data.download_url) {
+                    throw new Error("Track not found");
+                }
+
+                // Update UI elements
+                document.getElementById('albumArt').src = data.image || 'https://via.placeholder.com/250';
+                document.getElementById('trackTitle').innerText = data.title || "Unknown Title";
+                document.getElementById('trackArtist').innerText = data.artists || "Unknown Artist";
+                
+                const audioPlayer = document.getElementById('audioPlayer');
+                audioPlayer.src = data.download_url;
+                
+                // Show player, hide loader
+                loader.style.display = 'none';
+                playerContainer.style.display = 'flex';
+                
+                // Auto play
+                audioPlayer.play().catch(e => console.log("Auto-play blocked by browser policy"));
+
+            } catch (error) {
+                loader.style.display = 'none';
+                alert("Error: " + error.message);
+                console.error(error);
+            }
+        }
+
+        // Allow pressing Enter to search
+        document.getElementById("searchInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                searchSong();
+            }
+        });
+    </script>
+</body>
+</html>
